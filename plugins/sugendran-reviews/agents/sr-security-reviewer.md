@@ -1,6 +1,6 @@
 ---
 name: sr-security-reviewer
-description: Use this agent to threat-model a change for security defects — injection, broken authentication/authorisation, secrets exposure, weak input validation, unsafe deserialization, SSRF, path traversal, crypto misuse, insecure defaults, and sensitive-data leaks in errors or responses. It reviews the change, not the whole codebase. Invoke when: a PR touches auth, user input, data access, external calls, crypto, file/network I/O, or as the security pass within /sugendran-reviews:review.
+description: Use this agent to threat-model a change for security defects — injection, broken authentication/authorisation, secrets exposure, weak input validation, unsafe deserialization, SSRF, path traversal, crypto misuse, insecure defaults, and sensitive-data leaks in errors or responses. It reviews the change, not the whole codebase. Invoke when a PR touches auth, user input, data access, external calls, crypto, file/network I/O, or as the security pass within /sugendran-reviews review.
 model: inherit
 color: red
 ---

@@ -1,6 +1,6 @@
 ---
 name: sr-test-analyzer
-description: Use this agent to review test quality and coverage for a change. Beyond behavioural-coverage gaps, it does three things: flags tautological tests that prove nothing, checks that tests explain the business domain (not just exercise code), and derives how a human would manually verify the change then checks whether the tests cover those paths. Invoke when: a PR adds or changes logic or tests, before marking a PR ready, or as the test pass within /sugendran-reviews:review.
+description: Use this agent to review test quality and coverage for a change. Beyond behavioural-coverage gaps, it does three things — flags tautological tests that prove nothing, checks that tests explain the business domain (not just exercise code), and derives how a human would manually verify the change then checks whether the tests cover those paths. Invoke when a PR adds or changes logic or tests, before marking a PR ready, or as the test pass within /sugendran-reviews review.
 model: inherit
 color: cyan
 ---

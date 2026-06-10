@@ -7,13 +7,10 @@
   },
   "description": "Personal Claude Code marketplace for skills Sugendran uses.",
   "version": "0.1.0",
-  "metadata": {
-    "pluginRoot": "./plugins"
-  },
   "plugins": [
     {
       "name": "sugendran-reviews",
-      "source": "sugendran-reviews",
+      "source": "./plugins/sugendran-reviews",
       "description": "Deep PR review via specialist subagents, driven by /sugendran-reviews:review."
     }
   ]

@@ -1,6 +1,6 @@
 ---
 name: sr-silent-failure-hunter
-description: Use this agent to find silent and masked failures in a change — errors that get swallowed, hidden, or quietly turned into a default. It hunts empty/over-broad catch blocks, ignored exceptions, fallbacks that mask a real failure, missing error logging, and errors converted to nil/null/default without justification. Invoke when: a change touches error handling, adds catch/rescue/except blocks or fallback logic, or as the error-handling pass within /sugendran-reviews:review when error paths changed.
+description: Use this agent to find silent and masked failures in a change — errors that get swallowed, hidden, or quietly turned into a default. It hunts empty/over-broad catch blocks, ignored exceptions, fallbacks that mask a real failure, missing error logging, and errors converted to nil/null/default without justification. Invoke when a change touches error handling, adds catch/rescue/except blocks or fallback logic, or as the error-handling pass within /sugendran-reviews review when error paths changed.
 model: inherit
 color: orange
 ---
