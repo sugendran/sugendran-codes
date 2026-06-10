@@ -15,7 +15,7 @@ Each skill ships as its own plugin under `plugins/`, so you install only what yo
 
 | Plugin | Description |
 | ------ | ----------- |
-| _none yet_ | — |
+| [sugendran-reviews](./plugins/sugendran-reviews) | Deep PR review via specialist subagents, driven by `/sugendran-reviews:review`. |
 
 ## Layout
 
