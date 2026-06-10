@@ -1,7 +1,9 @@
 ---
 name: sr-synthesis
 description: Use this agent LAST in a PR review, after all reviewers have run. It takes every reviewer's findings and produces ONE ranked action plan — applying scope discipline (dropping findings not caused by the change), deduping issues raised by multiple reviewers, cross-correlating related findings, and ordering everything Critical to Low. Invoke when the reviewers in a /sugendran-reviews review have returned and you need a single prioritised summary instead of several separate reports.
-model: inherit
+model: sonnet
+effort: low
+tools: Read
 color: yellow
 ---
 

@@ -1,7 +1,9 @@
 ---
 name: sr-change-navigator
 description: Use this agent FIRST in a PR review, before any other reviewer. It reads the diff and PR description and produces a "reading guide" — what the change really does (intent vs. incidental churn), the business domain it touches, the entry points, the optimal order to read the files, and the risk hotspots. Its output is passed as shared context to every other reviewer so they review with intent rather than cold. Invoke when starting a /sugendran-reviews review, when orienting before reviewing an unfamiliar PR, or when a diff is large and you need to know what actually matters before reading line by line.
-model: inherit
+model: sonnet
+effort: low
+tools: Read, Grep, Glob, Bash
 color: blue
 ---
 

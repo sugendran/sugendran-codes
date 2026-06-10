@@ -1,7 +1,9 @@
 ---
 name: sr-type-design-analyzer
 description: Use this agent to review the design of types AND interfaces a change adds or modifies. It enforces SOLID principles and Werner Vogels' 6 Rules for Good API Design, pushes to make illegal states unrepresentable, and rates the design on encapsulation, invariant expression, usefulness, and enforcement (1-10 each). Invoke when a PR introduces or changes types, data models, interfaces, or any public API surface, or as the type pass within /sugendran-reviews review.
-model: inherit
+model: opus
+effort: high
+tools: Read, Grep, Glob, Bash
 color: pink
 ---
 

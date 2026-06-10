@@ -1,7 +1,9 @@
 ---
 name: sr-code-reviewer
 description: Use this agent to review the general quality of a change — correctness, project-guideline compliance, and comment accuracy. It reads CLAUDE.md (if present) and checks the diff against it, hunts for bugs, and flags comments that contradict, mislead, or have gone stale relative to the code. Invoke when reviewing a PR for overall quality, before committing or opening a PR, or as the always-on general pass within /sugendran-reviews review.
-model: inherit
+model: sonnet
+effort: medium
+tools: Read, Grep, Glob, Bash
 color: green
 ---
 

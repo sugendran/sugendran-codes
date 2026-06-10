@@ -104,7 +104,30 @@ shape is what lets `sr-synthesis` parse, dedupe, and rank.
 ### Agent frontmatter
 
 Each agent file uses: `name` (the `sr-` prefixed name), `description` (with worked
-"when to invoke" scenarios), `model: inherit`, and a `color`.
+"when to invoke" scenarios), `model`, `effort`, a read-only `tools` allowlist, and a
+`color`.
+
+### Cost/quality profile ("balanced")
+
+Agents do not support a per-agent token or turn budget (`maxTurns` is skills/commands
+only), so cost is controlled by model tier, effort, and the tools allowlist. The
+orchestrator further limits cost by running only applicable agents.
+
+| Agent | model | effort |
+|-------|-------|--------|
+| sr-change-navigator | sonnet | low |
+| sr-code-reviewer | sonnet | medium |
+| sr-silent-failure-hunter | sonnet | medium |
+| sr-test-analyzer | sonnet | medium |
+| sr-type-design-analyzer | opus | high |
+| sr-security-reviewer | opus | high |
+| sr-production-safety | opus | high |
+| sr-synthesis | sonnet | low |
+
+Opus is reserved for the deep, high-stakes reasoning where a miss is expensive
+(security, distributed-systems safety, type/API design). Every agent gets a read-only
+`tools` allowlist — `Read, Grep, Glob, Bash` for the inspectors, `Read` only for
+synthesis — which also enforces the "reports, never edits" rule at runtime.
 
 ## The agents
 

@@ -1,7 +1,9 @@
 ---
 name: sr-production-safety
 description: Use this agent to judge whether a change would deploy safely in a distributed-systems environment. It checks rolling-deploy compatibility, backward/forward schema compatibility, safe data migrations (expand-contract), idempotency and retries, partial-failure blast radius, rollback and feature-flagging, concurrency hazards, and whether new code paths are observable in production. Invoke when a PR changes APIs, schemas, migrations, background jobs, network calls, or shared state, or as the production-safety pass within /sugendran-reviews review.
-model: inherit
+model: opus
+effort: high
+tools: Read, Grep, Glob, Bash
 color: purple
 ---
 
