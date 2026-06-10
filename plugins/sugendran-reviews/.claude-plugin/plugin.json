@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "sugendran-reviews",
+  "description": "Deep PR review via specialist subagents: a navigator that reads the change first, six focused reviewers (code, silent failures, tests, type/interface design, security, production safety), and a synthesiser that ranks every finding into one action plan.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Sugendran Ganess",
+    "email": "sugendran.ganess@ordermentum.com"
+  },
+  "license": "MIT"
+}

@@ -10,5 +10,11 @@
   "metadata": {
     "pluginRoot": "./plugins"
   },
-  "plugins": []
+  "plugins": [
+    {
+      "name": "sugendran-reviews",
+      "source": "sugendran-reviews",
+      "description": "Deep PR review via specialist subagents, driven by /sugendran-reviews:review."
+    }
+  ]
 }
