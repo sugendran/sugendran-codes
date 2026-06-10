@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "sugendran-codes",
+  "owner": {
+    "name": "Sugendran Ganess",
+    "email": "sugendran.ganess@ordermentum.com"
+  },
+  "description": "Personal Claude Code marketplace for skills Sugendran uses.",
+  "version": "0.1.0",
+  "metadata": {
+    "pluginRoot": "./plugins"
+  },
+  "plugins": []
+}
