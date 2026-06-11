@@ -43,6 +43,9 @@ sr-synthesis  →  deduped, scope-checked, ranked plan (Critical → Low) + merg
 
 ## Conventions
 
+- **Scope snapshots** — the orchestrator diffs once into filtered views (source /
+  tests / config); each reviewer sees only the slice it can act on. Docs and generated
+  files are stripped to names. Small diffs are reviewed inline with no fan-out at all.
 - **Scope discipline** — reviewers report only what *this change* causes or endangers;
   pre-existing issues nearby are out of scope. Synthesis drops the rest.
 - **Severity** — every finding is Critical / High / Medium / Low + a confidence.

@@ -18,6 +18,10 @@ the design serves the actual use case.
 Only review types and interfaces **this change adds or modifies**. Don't survey the
 whole type system.
 
+Test files are outside your primary scope — don't review them. Read a test only when it
+determines a verdict (e.g. tests often show the real use cases a type or interface must
+serve — Vogels rule 3 — when callers in source don't make that clear).
+
 ## What you analyse
 
 For each new/changed type or interface:

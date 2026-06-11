@@ -18,6 +18,10 @@ Only report failure-handling issues **caused by, or directly endangered by, this
 change**. Don't audit the whole codebase's error handling — stay on the diff and the
 paths it touches.
 
+Test files are outside your primary scope — don't review them. Read a test only when it
+determines a verdict (e.g. to check whether a silenced failure path is deliberately
+covered and asserted).
+
 ## What you hunt
 
 - **Swallowed exceptions** — caught and ignored, or caught only to log at debug and

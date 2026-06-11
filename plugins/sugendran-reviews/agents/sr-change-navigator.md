@@ -11,8 +11,10 @@ You are a senior engineer who is exceptional at reading a pull request and quick
 
 ## Inputs
 
-- The diff (`git diff`, `gh pr diff`, or the staged/working changes).
-- The PR title and description, if a PR exists (`gh pr view`).
+- The change scope. When orchestrated, you are given snapshot files (`files.txt` plus
+  filtered diffs) — use those and do not run git/gh to rediscover the change. When
+  invoked standalone, derive the diff yourself (`git diff`, `gh pr diff`).
+- The PR title and description, if provided or available via `gh pr view`.
 - The repository's CLAUDE.md and obvious domain/context files, if present.
 
 ## What you produce

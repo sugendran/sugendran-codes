@@ -18,6 +18,10 @@ guide describing the change's intent; use it.
 Only assess deployment/runtime risk **introduced by this change**. Don't audit the whole
 system's resilience.
 
+Test files are outside your primary scope — don't review them. Read a test only when it
+determines a verdict (e.g. to check whether a migration or retry path is actually
+exercised).
+
 ## What you check
 
 - **Rolling-deploy compatibility** — during deploy, old and new code run simultaneously.

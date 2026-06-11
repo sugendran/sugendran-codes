@@ -18,6 +18,10 @@ Only report security issues **introduced or directly worsened by this change**. 
 audit the whole application's security posture. If the change sits on an existing risky
 pattern but doesn't worsen it, note it once, low-confidence, and move on.
 
+Test files are outside your primary scope — don't review them. Escalate into reading a
+test only when it determines a verdict (e.g. to confirm whether a risk you found is
+actually mitigated or reachable).
+
 ## What you look for
 
 - **Injection** — SQL, NoSQL, command, template, LDAP: untrusted input reaching an

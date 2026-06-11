@@ -254,17 +254,41 @@ Each line attributes the source agent and keeps the file:line reference.
 
 ## Orchestrator: /sugendran-reviews:review
 
-1. **Scope** — `git diff --name-only` (and `gh pr view` / `gh pr diff` if a PR
-   exists) to find changed files; parse `$ARGUMENTS` for an optional subset of aspects.
-2. **Navigate** — run `sr-change-navigator`; capture the reading guide.
-3. **Select** — choose applicable reviewers from the changed files:
+1. **Snapshot (once)** — identify the diff (`gh pr diff` if a PR exists, else the
+   staged/working `git diff`), classify changed files (source / tests / config / docs /
+   generated), and write filtered snapshots to a temp scope dir: `source.diff`,
+   `tests.diff`, `config.diff`, and `files.txt` (every file with class and +/− counts).
+   Docs and generated hunks are never written to any snapshot — they appear in
+   `files.txt` by name only. Subagents never run git/gh; the snapshot is the single
+   source of truth, immune to mid-review edits.
+2. **Route by size and content** — docs/generated-only changes get a brief inline
+   sanity check, no fan-out. Small changes (under ~150 changed lines across
+   source+tests+config) are reviewed inline by the orchestrator applying every lens,
+   reported in the synthesis format — the pipeline's per-agent floor cost isn't worth
+   it for small diffs. Everything else takes the full pipeline.
+3. **Navigate** — run `sr-change-navigator` over `files.txt` + all snapshots; capture
+   the reading guide.
+4. **Select** — choose applicable reviewers from the changed files:
    - always: code-reviewer, security-reviewer, production-safety, synthesis
    - if tests changed / logic added: test-analyzer
    - if error handling touched: silent-failure-hunter
    - if types/interfaces added or modified: type-design-analyzer
-4. **Fan out** — launch the selected reviewers in parallel via the Task tool, passing
-   each the reading guide as context.
-5. **Synthesise** — run `sr-synthesis` over all findings; present the ranked plan.
+5. **Fan out** — launch the selected reviewers in parallel via the Task tool. Each
+   gets the reading guide plus only the snapshots it can act on:
+
+   | Agent | Snapshots |
+   |-------|-----------|
+   | code-reviewer | source, tests, config |
+   | test-analyzer | source, tests |
+   | silent-failure-hunter | source |
+   | type-design-analyzer | source |
+   | security-reviewer | source, config |
+   | production-safety | source, config |
+
+   Agents whose view excludes tests may escalate into reading a test file only when it
+   determines a verdict on a specific finding.
+6. **Synthesise** — run `sr-synthesis` over all findings (no diff — it judges findings,
+   not code); present the ranked plan.
 
 `$ARGUMENTS` lets the user request a subset, e.g. `/sugendran-reviews:review security tests`.
 `all` (default) runs everything applicable.
