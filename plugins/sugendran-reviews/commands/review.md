@@ -43,7 +43,8 @@ act on; a synthesiser ranks everything into one action plan.
   accuracy, silent failures, test gaps/tautology/domain-meaning/human-verification,
   type & API design incl. SOLID and Vogels' rules, security, production safety) and
   present a ranked summary in the synthesis format. The full pipeline is not worth
-  8 cold contexts for a small diff.
+  8 cold contexts for a small diff. **For every finding, resolve the exact line by
+  grepping the offending snippet in the real file — never count offsets in the diff.**
 - **Otherwise** → full pipeline (steps 3–6).
 
 ### 3. Navigate (always first)
@@ -87,9 +88,12 @@ Every Task prompt contains: the navigator's reading guide, the agent's snapshot 
 
 ### 6. Synthesise (always last)
 
-Launch **sr-synthesis** with the reading guide and every reviewer's findings — no
-diff, no snapshots; it judges findings, not code. It applies scope discipline, dedupes,
-cross-correlates, and returns one ranked action plan with a merge verdict. Present that
+Launch **sr-synthesis** with the reading guide, every reviewer's findings, the snapshot
+paths (`source.diff` etc.) and `files.txt`, and repo read access. It does **not** pass
+findings through blindly: for each one it greps the verbatim snippet in the real file to
+comprehend it and resolve the exact `file:line`, gates out anything it can't confirm,
+cross-applies lenses between reviewers, recommends follow-up passes, dedupes, applies
+scope discipline, and returns one ranked action plan with a merge verdict. Present that
 as the result, leading with the verdict line. Clean up `$SCOPE` afterwards.
 
 ## Usage
