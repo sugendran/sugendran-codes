@@ -47,12 +47,20 @@ change let it reach?
 One-line **Summary** (worst-case impact), then findings:
 
 ```
-- [SEVERITY · confidence] <vulnerability>  (file:line)
+- [SEVERITY · confidence] <vulnerability>
+  Where: <file> › <enclosing symbol/function> — `<exact offending line, copied verbatim>`
   Why it matters: <attacker capability / impact, and how it's reached>
   Suggested fix: <parameterise, validate, authorise, rotate, etc.>
 ```
 
+**Anchoring — do not count line numbers from the diff** (that is the single biggest
+source of wrong citations). Anchor each finding on *content*: the file path, the
+enclosing symbol, and the vulnerable line copied **verbatim** in backticks. The synthesis
+agent greps that snippet in the real file to resolve the exact line, so copy it
+faithfully. If you give a line number at all, mark it a `~hint` — never present it as fact.
+
 Severity reflects impact (**Critical** = remote code exec / auth bypass / data breach;
 down to **Low**). `confidence` reflects exploitability and how sure you are it's
 reachable. Avoid theoretical findings dressed as Critical — calibrate honestly. End with
-**Positive observations** — security the change handled well. Cite file:line.
+**Positive observations** — security the change handled well. Anchor every finding on a
+verbatim snippet; never invent locations.

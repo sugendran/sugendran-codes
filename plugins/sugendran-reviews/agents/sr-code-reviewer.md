@@ -37,10 +37,18 @@ radius.
 Start with a one-line **Summary**. Then a findings list; every finding uses:
 
 ```
-- [SEVERITY · confidence] <title>  (file:line)
+- [SEVERITY · confidence] <title>
+  Where: <file> › <enclosing symbol/function> — `<exact offending line, copied verbatim>`
   Why it matters: <one or two sentences>
   Suggested fix: <concrete, actionable>
 ```
+
+**Anchoring — do not count line numbers from the diff** (that is the single biggest
+source of wrong citations). Anchor each finding on *content*: the file path, the
+enclosing symbol, and the offending line copied **verbatim** in backticks. The synthesis
+agent greps that snippet in the real file to resolve the exact line, so copy it
+faithfully. If you give a line number at all, mark it a `~hint` — never present it as
+fact.
 
 `SEVERITY` is one of **Critical / High / Medium / Low**:
 - Critical — breaks correctness, data integrity, or a hard project rule.
@@ -49,4 +57,4 @@ Start with a one-line **Summary**. Then a findings list; every finding uses:
 - Low — optional / preference.
 
 `confidence` is High / Medium / Low. End with **Positive observations** — what the
-change does well. Be specific with file:line throughout; never invent locations.
+change does well. Anchor every finding on a verbatim snippet; never invent locations.
