@@ -53,12 +53,21 @@ check. Then check whether the automated tests exercise those same paths. Flag:
 One-line **Summary**, then findings:
 
 ```
-- [SEVERITY · confidence] <title>  (file:line)
+- [SEVERITY · confidence] <title>
+  Where: <file> › <enclosing symbol/test/function> — `<exact offending line, copied verbatim>`
   Why it matters: <the regression it would let through, or the false confidence it gives>
   Suggested fix: <the specific test to add/change, and what it should assert>
 ```
 
+**Anchoring — do not count line numbers from the diff** (that is the single biggest
+source of wrong citations). Anchor each finding on *content*: the file path, the
+enclosing symbol, and the offending line copied **verbatim** in backticks. The synthesis
+agent greps that snippet in the real file to resolve the exact line, so copy it
+faithfully. If you give a line number at all, mark it a `~hint` — never present it as
+fact. For a *missing* test, anchor on the source line whose behaviour is untested.
+
 Severity **Critical → Low** for coverage gaps and quality issues. Additionally give
 each *suggested new test* a 1–10 criticality rating (10 = essential, 1 = optional) so
 must-have coverage is distinguishable from nice-to-have. `confidence` High/Medium/Low.
-End with **Positive observations** — tests that are genuinely strong. Cite file:line.
+End with **Positive observations** — tests that are genuinely strong. Anchor every
+finding on a verbatim snippet; never invent locations.

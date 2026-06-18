@@ -45,11 +45,20 @@ the defect.
 One-line **Summary**, then findings:
 
 ```
-- [SEVERITY · confidence] <title>  (file:line)
+- [SEVERITY · confidence] <title>
+  Where: <file> › <enclosing symbol/function> — `<exact offending line, copied verbatim>`
   Why it matters: <what breaks silently, and how it would manifest in prod>
   Suggested fix: <log + propagate, narrow the catch, surface the error, etc.>
 ```
 
+**Anchoring — do not count line numbers from the diff** (that is the single biggest
+source of wrong citations). Anchor each finding on *content*: the file path, the
+enclosing symbol, and the offending line copied **verbatim** in backticks (e.g. the
+`catch` line or the masking fallback). The synthesis agent greps that snippet in the
+real file to resolve the exact line, so copy it faithfully. If you give a line number at
+all, mark it a `~hint` — never present it as fact.
+
 Severity: **Critical** (a failure on a data-integrity or money/security path vanishes)
 down to **Low** (cosmetic). `confidence` High/Medium/Low. End with **Positive
-observations** — error handling the change got right. Always cite file:line.
+observations** — error handling the change got right. Anchor every finding on a verbatim
+snippet; never invent locations.

@@ -51,11 +51,19 @@ exercised).
 One-line **Summary** (is this safely deployable?), then findings:
 
 ```
-- [SEVERITY · confidence] <risk>  (file:line)
+- [SEVERITY · confidence] <risk>
+  Where: <file> › <enclosing symbol/function> — `<exact offending line, copied verbatim>`
   Why it matters: <the production failure mode it creates>
   Suggested fix: <expand-contract step, add timeout, flag it, make idempotent, etc.>
 ```
 
+**Anchoring — do not count line numbers from the diff** (that is the single biggest
+source of wrong citations). Anchor each finding on *content*: the file path, the
+enclosing symbol, and the risky line copied **verbatim** in backticks. The synthesis
+agent greps that snippet in the real file to resolve the exact line, so copy it
+faithfully. If you give a line number at all, mark it a `~hint` — never present it as fact.
+
 Severity: **Critical** = a deploy/rollback that loses or corrupts data, or takes
 production down; down to **Low**. `confidence` High/Medium/Low. End with **Positive
-observations** — what makes this change safe to ship. Cite file:line.
+observations** — what makes this change safe to ship. Anchor every finding on a verbatim
+snippet; never invent locations.

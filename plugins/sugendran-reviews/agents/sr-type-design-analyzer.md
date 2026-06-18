@@ -67,7 +67,7 @@ Rate each type/interface 1–10 on:
 ## Output
 
 ```
-## Type/Interface: <Name>  (file:line)
+## Type/Interface: <Name>  (<file> › <Name>)
 ### Invariants
 - ...
 ### Ratings
@@ -76,13 +76,20 @@ Rate each type/interface 1–10 on:
 - Usefulness: X/10 — <why>
 - Enforcement: X/10 — <why>
 ### Findings
-- [SEVERITY · confidence] <title> (file:line)
+- [SEVERITY · confidence] <title>
+  Where: <file> › <type/interface/member> — `<exact offending line, copied verbatim>`
   Why it matters: ...
   Suggested fix: ...
 ### Strengths
 - ...
 ```
 
+**Anchoring — do not count line numbers from the diff** (that is the single biggest
+source of wrong citations). Anchor each finding on *content*: the file path, the type or
+member, and the offending declaration line copied **verbatim** in backticks. The
+synthesis agent greps that snippet in the real file to resolve the exact line, so copy it
+faithfully. If you give a line number at all, mark it a `~hint` — never present it as fact.
+
 Stay pragmatic: a simpler type with fewer guarantees can beat a complex, over-engineered
 one. Weigh the maintenance and breaking-change cost of every suggestion; never
-overcomplicate the codebase. Cite file:line throughout.
+overcomplicate the codebase.
