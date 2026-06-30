@@ -19,7 +19,7 @@ export function validateOutput(obj) {
   for (const it of obj.items) {
     if (!it || typeof it !== 'object') continue;
     if (!KINDS.has(it.kind)) continue;
-    if (!SEVERITY_RANK[it.severity]) continue;
+    if (SEVERITY_RANK[it.severity] === undefined) continue;
     if (typeof it.file !== 'string') continue;
     items.push({
       kind: it.kind,
@@ -37,7 +37,7 @@ export function validateOutput(obj) {
 }
 
 export function filterItems(items, config) {
-  const minRank = SEVERITY_RANK[config.minSeverity] || 2;
+  const minRank = SEVERITY_RANK[config.minSeverity] ?? 2;
   return items.filter((it) => SEVERITY_RANK[it.severity] >= minRank && it.confidence >= config.minConfidence);
 }
 
