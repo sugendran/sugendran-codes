@@ -64,19 +64,24 @@ function readStdin() {
 }
 
 async function runManual() {
-  const deps = realDeps();
-  const cwd = process.cwd();
-  const config = { ...deps.loadConfig(process.env, cwd), enabled: true };
-  const diff = deps.collectDiff({ cwd, maxBytes: config.maxDiffBytes, pathsIgnore: config.pathsIgnore });
-  if (diff.mode === 'empty') { process.stdout.write('No uncommitted changes to review.\n'); process.exit(0); }
-  const prompt = deps.buildPrompt({ template: deps.readTemplate(), diff, intent: deps.readIntent(null) });
-  const result = await deps.runOpencode({ prompt, cwd, timeoutMs: config.timeoutMs });
-  if (!result.ok) { process.stdout.write(`Skeptic unavailable: ${result.error}\n`); process.exit(0); }
-  const parsed = deps.validateOutput(deps.coerceJson(result.text));
-  if (!parsed.ok) { process.stdout.write(`Could not parse skeptic output: ${parsed.error}\n`); process.exit(0); }
-  const decision = deps.decide({ parsed: parsed.value, config });
-  process.stdout.write((decision.inject ? decision.additionalContext : 'Skeptic found nothing material.') + '\n');
-  process.exit(0);
+  try {
+    const deps = realDeps();
+    const cwd = process.cwd();
+    const config = { ...deps.loadConfig(process.env, cwd), enabled: true };
+    const diff = deps.collectDiff({ cwd, maxBytes: config.maxDiffBytes, pathsIgnore: config.pathsIgnore });
+    if (diff.mode === 'empty') { process.stdout.write('No uncommitted changes to review.\n'); process.exit(0); }
+    const prompt = deps.buildPrompt({ template: deps.readTemplate(), diff, intent: deps.readIntent(null) });
+    const result = await deps.runOpencode({ prompt, cwd, timeoutMs: config.timeoutMs });
+    if (!result.ok) { process.stdout.write(`Skeptic unavailable: ${result.error}\n`); process.exit(0); }
+    const parsed = deps.validateOutput(deps.coerceJson(result.text));
+    if (!parsed.ok) { process.stdout.write(`Could not parse skeptic output: ${parsed.error}\n`); process.exit(0); }
+    const decision = deps.decide({ parsed: parsed.value, config });
+    process.stdout.write((decision.inject ? decision.additionalContext : 'Skeptic found nothing material.') + '\n');
+    process.exit(0);
+  } catch (err) {
+    process.stdout.write(`Skeptic could not run: ${err?.message || err}\n`);
+    process.exit(0);
+  }
 }
 
 async function main() {

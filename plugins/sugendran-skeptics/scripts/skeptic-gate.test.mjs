@@ -16,7 +16,7 @@ function baseDeps(over = {}) {
     validateOutput: (o) => ({ ok: true, value: { verdict: o.verdict, summary: '', items: o.items } }),
     decide: ({ parsed }) => ({ inject: parsed.items.length > 0, additionalContext: 'CTX', kept: parsed.items }),
     buildHookOutput: (d) => (d.inject ? { hookSpecificOutput: { hookEventName: 'Stop', additionalContext: d.additionalContext } } : {}),
-    state: { has: () => false, record: (s, h) => recorded.push(h) },
+    state: { has: () => false, record: (_s, h) => recorded.push(h) },
     readTemplate: () => 'TPL',
     log: () => {},
     ...over,
