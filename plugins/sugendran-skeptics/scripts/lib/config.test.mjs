@@ -10,6 +10,7 @@ test('defaults when no file and no env', () => {
   const cfg = loadConfig({}, dir);
   assert.equal(cfg.enabled, true);
   assert.equal(cfg.timeoutMs, 90000);
+  assert.equal(cfg.maxDiffBytes, 262144);
   assert.equal(cfg.minSeverity, 'medium');
   assert.equal(cfg.minConfidence, 0.6);
   assert.ok(Array.isArray(cfg.pathsIgnore));
