@@ -1,0 +1,5 @@
+{
+  "name": "sugendran-skeptics",
+  "description": "Adversarial business-logic skeptic. A Stop hook runs an opencode second-model review of the change Claude just wrote and feeds back unverified assumptions and logic bugs.",
+  "version": "0.1.0"
+}

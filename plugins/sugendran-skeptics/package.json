@@ -1,0 +1,10 @@
+{
+  "name": "sugendran-skeptics",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "opencode skeptic gate for Claude Code",
+  "scripts": {
+    "test": "node --test"
+  }
+}
