@@ -1,11 +1,14 @@
 # sugendran-skeptics — design
 
-**A Claude Code Stop hook that runs an opencode skeptic (GLM-5.2 via Ollama Cloud) against the code Claude just wrote, and feeds Claude-actionable counter-views back in — advisory, once, fail-safe.**
+**A Claude Code Stop hook that runs an opencode skeptic (GLM-5.2 via Ollama Cloud) against the business logic Claude just wrote, and challenges it — *are we doing the right thing, or just assuming it's right?* Counter-views feed back Claude-actionable: advisory, once, fail-safe.**
 
-It is **separate** from `sugendran-reviews`. Skeptics fires *in the loop* while Claude
-codes; `sugendran-reviews` is the deep pass *at PR time*. Because both apply the same
-review lenses, skeptics catches issues early — so by PR review there is little or nothing
-left. **That overlap is the point.**
+It is **separate** from `sugendran-reviews` and deliberately **narrow**. Skeptics fires *in
+the loop* while Claude codes, and engages only when **business logic** changes: it surfaces
+the assumptions baked into the change and the logic bugs hiding in it. `sugendran-reviews`
+stays the broad deep pass *at PR time* (deploy safety, type/API design, test design,
+security threat-model). Skeptics clears the **assumption-and-bug layer** early so PR review
+is left with the architectural judgement calls that genuinely need PR context.
+**Complementary, not redundant.**
 
 Inspired by `openai/codex-plugin-cc` (its adversarial prompt + diff-sizing). **Not copied** —
 we need none of its broker/jobs/session machinery, because `opencode run --format json` is
@@ -21,10 +24,13 @@ a single synchronous structured call.
 | Relationship to `sugendran-reviews` | 100% separate, no coupling |
 | Trigger | Claude Code **Stop hook** (Claude finished its turn) |
 | Posture | **Advisory** — inject findings once per change-set, no enforced loop |
+| Focus | **Unverified assumptions (primary)** + **logic bugs (secondary)**, on **business-logic changes** only |
+| Out of scope | security threat-model · deploy/prod safety · type/API design · deep test analysis · style — all deferred to `sugendran-reviews` |
+| Intent grounding | last user request (from the hook's `transcript_path`) fed in, so it can weigh "right thing" vs "assumed" |
 | Skeptic model | `glm-5.2` via **Ollama Cloud** (non-Claude lineage = genuine counter-view) |
 | Output | **Claude-actionable** structured JSON → terse action list injected to Claude |
 | Build | One focused fail-safe gate script + small tested libs + prompt/schema data |
-| Scope reviewed | Claude's **uncommitted working-tree diff** only |
+| Scope reviewed | business-logic changes within Claude's **uncommitted working-tree diff** |
 | Manual escape hatch | `/sugendran-skeptics` command + `SKEPTICS_DISABLE=1` env |
 
 ---
@@ -40,10 +46,10 @@ Claude finishes a turn ──▶ Stop hook ──▶ scripts/skeptic-gate.mjs
    │ 3. No reviewable code, or diff-hash already reviewed ─▶ exit 0 ✓ │  (no-nag)
    │ 4. Diff over size ceiling? ─▶ stat-only fallback view           │
    │ 5. opencode run --format json -m ollama/glm-5.2 <skeptic prompt>│  (read-only, timeout)
-   │ 6. Parse NDJSON event stream ▶ final JSON {verdict, findings[]} │
+   │ 6. Parse NDJSON event stream ▶ final JSON {verdict, items[]}    │
    └───────────────────────────────┬────────────────────────────────┘
                                    │
-   verdict=approve  OR  no findings ≥ threshold  OR  ANY error/timeout
+   verdict=approve  OR  no items ≥ threshold  OR  ANY error/timeout
                                    └──────────────▶ exit 0 ✓   (FAIL OPEN — never wedge)
                                    │
    material findings (first time for this diff-hash)
@@ -68,7 +74,8 @@ plugins/sugendran-skeptics/
   scripts/lib/
     config.mjs    # load/merge config + env; thresholds, model, caps, on/off
     diff.mjs      # collect working-tree diff; size; stat-only fallback; hash; defensive I/O
-    prompt.mjs    # interpolate prompts/skeptic.md with the diff blob
+    intent.mjs    # read transcript_path → last user request (fail-open if absent)
+    prompt.mjs    # interpolate prompts/skeptic.md with the diff blob + intent
     opencode.mjs  # spawn opencode run; timeout; capture; parse NDJSON → final message
     decision.mjs  # validate against schema; filter by threshold; build Stop-hook output
     state.mjs     # per-session no-nag record of reviewed diff-hashes
@@ -89,16 +96,17 @@ the fail-open guarantee.
    timeout, unparseable output, malformed/empty diff — exits 0 and allows the turn to end,
    leaving a one-line breadcrumb in a log. A reviewer must *never* trap the session.
 2. **No-nag / idempotent.** Hash the reviewed diff; if unchanged since the last gate, do
-   nothing. Inject a given finding-set at most once. No skeptic-vs-Claude argument loop.
+   nothing. Inject a given item-set at most once. No skeptic-vs-Claude argument loop.
 3. **Bounded.** Wall-clock timeout on the opencode call; diff-size ceiling with stat-only
    fallback (stolen from codex). The gate cannot run long or embed a giant prompt.
-4. **Targeted.** Reviews only Claude's working-tree changes, pre-collected into one blob.
-   opencode runs read-only and never re-reads the repo. This is the snappiness.
-5. **Grounded + calibrated prompt.** "Break confidence, invent nothing, one strong finding
-   over many weak, return empty findings if the change is fine." Calibration is what keeps
-   it quiet on good code and drives the PR-time review toward zero.
+4. **Targeted.** Reviews only Claude's working-tree changes, pre-collected into one blob,
+   and engages only where **business logic** changed. opencode runs read-only and never
+   re-reads the repo. This is the snappiness.
+5. **Grounded + calibrated prompt.** "Break confidence, invent nothing, one strong challenge
+   over many weak, return no items if the logic is sound." Calibration is what keeps it quiet
+   on good code and drives the assumption-and-bug layer toward zero by PR time.
 6. **Claude-actionable + escape hatches.** Strict JSON schema; the injected `reason` is a
-   terse machine-derived action list (file:line · severity · why · fix), not human prose.
+   terse machine-derived action list (file:line · kind · problem · verify), not human prose.
    `SKEPTICS_DISABLE=1`, `stop_hook_active`, a config file, and the manual command all keep
    the user in control.
 
@@ -106,21 +114,27 @@ the fail-open guarantee.
 
 ## Skeptic prompt (in `prompts/skeptic.md`)
 
-Adapts codex's adversarial framing; attack surface mirrors `sugendran-reviews` lenses so
-the two converge:
+Adapts codex's adversarial framing, but **narrowed to business logic**:
 
-- **Role/stance:** "You are a skeptic reviewing code an AI just wrote. Your job is to break
-  confidence in it, not validate it. Default to skepticism; no credit for good intent."
-- **Attack surface:** correctness/logic bugs · silent/swallowed failures · auth & trust
-  boundaries · data loss/corruption/idempotency · rollback & migration safety · races &
-  ordering · empty/null/timeout/degraded-dependency paths · schema/version skew ·
-  observability gaps · type/interface design.
-- **Finding bar:** material only. No style/naming/nits. Each finding answers: what breaks,
-  why this path is vulnerable, likely impact, the concrete fix.
-- **Grounding:** every finding defensible from the supplied diff; invent no files/lines/
-  paths; state inferences honestly; keep confidence calibrated.
-- **Calibration:** prefer one strong finding over several weak; if it's safe, return
-  `verdict:"approve"` with empty `findings`.
+- **Role/stance:** "You are a skeptic reviewing business logic an AI just wrote. You didn't
+  write it — read it cold. Your job is to find where it *assumes* the right behaviour
+  instead of *knowing* it. Challenge; don't validate. No credit for good intent."
+- **Intent grounding:** "Here is what this change was asked to do: `{{INTENT}}`. Judge the
+  logic against that, not just against itself." (Omitted cleanly if no intent available.)
+- **Primary lens — unverified assumptions:** for each business-logic change, name the
+  assumption it bakes in — about the domain rule, the requirement, the data shape, an
+  external API's behaviour, or an invariant — and ask: *verified or guessed? the right
+  rule?* This is the headline output.
+- **Secondary lens — logic bugs:** once the intent is granted, is the rule still wrong —
+  inverted condition, off-by-one, mishandled null/empty/boundary, happy-path-only?
+- **Scope gate:** engage only where business/domain behaviour changes. Ignore pure
+  refactors, renames, plumbing, formatting, config, imports. If nothing here changes
+  business behaviour, return `verdict:"approve"` with empty `items`.
+- **Finding bar:** material only. No style/naming/nits.
+- **Grounding:** every challenge defensible from the supplied diff/intent; invent no
+  files/lines/paths/behaviour; state inferences honestly; calibrate confidence.
+- **Calibration:** one strong challenge beats five weak; if the logic is sound, say so and
+  return no items.
 - **Output contract:** return **only** JSON matching the schema below — no prose, no fence.
 - When the diff is in stat-only fallback mode, a `{{COLLECTION_GUIDANCE}}` block tells the
   model it has stats + file list, not full hunks, and to scope its certainty accordingly.
@@ -133,23 +147,26 @@ the two converge:
 {
   "verdict": "approve | needs-attention",
   "summary": "string",
-  "findings": [
+  "items": [
     {
+      "kind": "assumption | logic-bug",
       "severity": "critical | high | medium | low",
-      "title": "string",
+      "confidence": "number 0..1",
       "file": "string",
       "line_start": "integer",
       "line_end": "integer",
-      "confidence": "number 0..1",
-      "why": "string",
-      "fix": "string"
+      "assumption": "the unverified assumption the change bakes in (kind=assumption)",
+      "problem": "why it may be the wrong rule / where the logic breaks",
+      "verify": "the concrete thing Claude should check to confirm or fix"
     }
   ]
 }
 ```
 
-`decision.mjs` validates this, drops findings below the configured
-`min_severity` / `min_confidence`, and only injects if any survive.
+`decision.mjs` validates this, drops items below the configured
+`min_severity` / `min_confidence`, and only injects if any survive. The injected `reason`
+reads as a verify-or-fix action list — e.g. *"src/pricing.ts:42 — assumes discount ≤ price;
+not enforced. Verify the business rule or clamp it."*
 
 ---
 
@@ -164,8 +181,8 @@ the two converge:
 | `model` | `ollama/glm-5.2` | opencode model id for the skeptic |
 | `timeout_ms` | `90000` | wall-clock cap on the opencode call |
 | `max_diff_bytes` | `262144` | above this → stat-only fallback |
-| `min_severity` | `medium` | drop findings below this |
-| `min_confidence` | `0.6` | drop findings below this |
+| `min_severity` | `medium` | drop items below this |
+| `min_confidence` | `0.6` | drop items below this |
 | `paths_ignore` | lockfiles, generated, vendored | never reviewed |
 
 ---
@@ -181,7 +198,7 @@ wiring is unconfirmed and must be verified first:
 - A custom opencode provider (OpenAI-compatible) against `ollama.com` with `OLLAMA_API_KEY`.
 
 **Verification:** one-line probe must return a parseable final JSON:
-`opencode run --format json -m ollama/glm-5.2 'reply only: {"verdict":"approve","findings":[]}'`
+`opencode run --format json -m ollama/glm-5.2 'reply only: {"verdict":"approve","items":[]}'`
 The exact model id (`glm-5.2` vs a cloud-tagged variant) is pinned here once confirmed.
 
 ---
@@ -195,9 +212,10 @@ The exact model id (`glm-5.2` vs a cloud-tagged variant) is pinned here once con
 | Call exceeds `timeout_ms` | kill child, exit 0, breadcrumb "timeout" |
 | Output not valid JSON / fails schema | exit 0, breadcrumb "unparseable" |
 | Empty / non-code diff | exit 0, silent |
+| `transcript_path` missing/unreadable | proceed without intent grounding (don't fail) |
 | Diff-hash already reviewed | exit 0, silent (no-nag) |
-| `verdict:approve` or all findings sub-threshold | exit 0, silent |
-| Material findings, first time | `block` + action-list reason; record hash |
+| `verdict:approve` / no business-logic change / all items sub-threshold | exit 0, silent |
+| Material items, first time | `block` + verify-or-fix action list; record hash |
 
 ---
 
@@ -213,15 +231,17 @@ The exact model id (`glm-5.2` vs a cloud-tagged variant) is pinned here once con
 
 **Unit (per lib, fast, no network):**
 - `diff.mjs`: empty tree, untracked file, broken symlink, directory, over-ceiling → fallback, stable hash.
+- `intent.mjs`: transcript with user turns → last user ask; missing/garbled file → null (no throw).
 - `opencode.mjs`: parse a captured NDJSON fixture → final JSON; timeout path; non-JSON → error.
-- `decision.mjs`: threshold filtering; schema-invalid → fail open; valid findings → correct `block` shape.
+- `decision.mjs`: threshold filtering; schema-invalid → fail open; valid items → correct `block` shape.
 - `config.mjs`: defaults < file < env precedence; `SKEPTICS_DISABLE`.
 - `state.mjs`: same hash twice → second is no-op.
 
 **Manual QA (the team runs these):**
 - [ ] Install: `claude plugin validate ./plugins/sugendran-skeptics`; confirm Stop hook registered.
-- [ ] **Flawed change** — write a function that swallows an error; finish the turn; skeptic injects a `medium`+ finding pointing at the right `file:line`.
-- [ ] **Clean change** — make a trivial correct edit; finish the turn; skeptic stays silent (verdict approve, exit 0).
+- [ ] **Assumption challenge** — change a business rule that bakes in an unverified assumption (e.g. apply a discount without checking it can't exceed the price); finish the turn; skeptic raises an `assumption` item at the right `file:line` asking what was verified.
+- [ ] **Logic bug** — introduce an inverted condition / off-by-one / mishandled-empty case in domain logic; skeptic raises a `logic-bug` item.
+- [ ] **Pure refactor** — rename a variable or move a function with no behaviour change; skeptic stays silent (verdict approve, exit 0).
 - [ ] **No-nag** — finish a second turn without changing code; no second injection for the same diff.
 - [ ] **Fail open** — set `model` to a bogus id; finish a turn; turn completes normally, breadcrumb logged, no wedge.
 - [ ] **Large diff** — generate a >256 KB diff; gate falls back to stat-only and completes within `timeout_ms`.
