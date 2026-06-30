@@ -46,3 +46,14 @@ test('decide: material item → additionalContext hook output', () => {
   assert.match(out.hookSpecificOutput.additionalContext, /src\/pricing.ts:42/);
   assert.match(out.hookSpecificOutput.additionalContext, /verify:/);
 });
+
+test('decide: item with empty assumption and problem is filtered out', () => {
+  const emptyDescriptor = {
+    ...ITEM,
+    assumption: '',
+    problem: '',
+  };
+  const d = decide({ parsed: { verdict: 'needs-attention', items: [emptyDescriptor] }, config: CFG });
+  assert.equal(d.inject, false);
+  assert.deepEqual(d.kept, []);
+});

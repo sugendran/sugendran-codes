@@ -38,7 +38,12 @@ export function validateOutput(obj) {
 
 export function filterItems(items, config) {
   const minRank = SEVERITY_RANK[config.minSeverity] ?? 2;
-  return items.filter((it) => SEVERITY_RANK[it.severity] >= minRank && it.confidence >= config.minConfidence);
+  return items.filter(
+    (it) =>
+      SEVERITY_RANK[it.severity] >= minRank &&
+      it.confidence >= config.minConfidence &&
+      (it.assumption || it.problem),
+  );
 }
 
 export function formatAdditionalContext(items) {

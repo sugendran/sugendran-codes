@@ -22,7 +22,7 @@ The skeptic reads `./.sugendran-skeptics.json` with these keys:
 | `maxDiffBytes` | `262144` | Diffs larger than this use stat-only mode (filename + change count, no content) |
 | `minSeverity` | `medium` | Report findings at this severity or higher: `low`, `medium`, `high`, `critical` |
 | `minConfidence` | `0.6` | Report findings with confidence at this threshold or higher (0.0–1.0) |
-| `pathsIgnore` | `["*.lock", "*.json.lock", "node_modules/**", "vendor/**", ".generated/**"]` | Ignore lockfiles, vendored code, and generated files |
+| `pathsIgnore` | `["package-lock.json", "pnpm-lock.yaml", "yarn.lock", "*.min.js", "*.map", "dist/*", "build/*", "vendor/*"]` | Ignore lockfiles, minified files, sourcemaps, and build output |
 
 ## Model
 
