@@ -1,6 +1,6 @@
 # sugendran-skeptics — design
 
-**A Claude Code Stop hook that runs an opencode skeptic (GLM-5.2 via Ollama Cloud) against the business logic Claude just wrote, and challenges it — *are we doing the right thing, or just assuming it's right?* Counter-views feed back Claude-actionable: advisory, once, fail-safe.**
+**A Claude Code Stop hook that runs an opencode skeptic (the user's own opencode default model — GLM-5.2 for Sugendran) against the business logic Claude just wrote, and challenges it — *are we doing the right thing, or just assuming it's right?* Counter-views feed back Claude-actionable: advisory, once, fail-safe.**
 
 It is **separate** from `sugendran-reviews` and deliberately **narrow**. Skeptics fires *in
 the loop* while Claude codes, and engages only when **business logic** changes: it surfaces
@@ -27,7 +27,7 @@ a single synchronous structured call.
 | Focus | **Unverified assumptions (primary)** + **logic bugs (secondary)**, on **business-logic changes** only |
 | Out of scope | security threat-model · deploy/prod safety · type/API design · deep test analysis · style — all deferred to `sugendran-reviews` |
 | Intent grounding | last user request (from the hook's `transcript_path`) fed in, so it can weigh "right thing" vs "assumed" |
-| Skeptic model | `glm-5.2` via **Ollama Cloud** (non-Claude lineage = genuine counter-view) |
+| Skeptic model | **User's opencode default** — the plugin never passes `-m`. Prompt tuned against `glm-5.2` (Sugendran's default); a non-Claude default is recommended for a genuine counter-view |
 | Output | **Claude-actionable** structured JSON → terse action list injected to Claude |
 | Build | One focused fail-safe gate script + small tested libs + prompt/schema data |
 | Scope reviewed | business-logic changes within Claude's **uncommitted working-tree diff** |
@@ -39,23 +39,18 @@ a single synchronous structured call.
 
 ```
 Claude finishes a turn ──▶ Stop hook ──▶ scripts/skeptic-gate.mjs
-                                   │
-   ┌───────────────────────────────┴────────────────────────────────┐
-   │ 1. stop_hook_active? / SKEPTICS_DISABLE? ───────────▶ exit 0 ✓   │
-   │ 2. Collect uncommitted diff (git diff HEAD + untracked)         │
-   │ 3. No reviewable code, or diff-hash already reviewed ─▶ exit 0 ✓ │  (no-nag)
-   │ 4. Diff over size ceiling? ─▶ stat-only fallback view           │
-   │ 5. opencode run --format json -m ollama/glm-5.2 <skeptic prompt>│  (read-only, timeout)
-   │ 6. Parse NDJSON event stream ▶ final JSON {verdict, items[]}    │
-   └───────────────────────────────┬────────────────────────────────┘
-                                   │
-   verdict=approve  OR  no items ≥ threshold  OR  ANY error/timeout
-                                   └──────────────▶ exit 0 ✓   (FAIL OPEN — never wedge)
-                                   │
-   material findings (first time for this diff-hash)
-                                   └──────────────▶ {"decision":"block",
-                                                      "reason": <action list for Claude>}
-                                                    record diff-hash so it won't re-fire
+   │
+   │ 1. stop_hook_active? / SKEPTICS_DISABLE?               ──▶ exit 0 ✓   (off)
+   │ 2. Collect uncommitted diff (git diff HEAD + untracked)
+   │ 3. No reviewable code, or diff-hash already reviewed   ──▶ exit 0 ✓   (no-nag)
+   │ 4. Diff over size ceiling?  ─▶ stat-only fallback view
+   │ 5. opencode run --format json <skeptic prompt>             (user's default model; read-only, timeout)
+   │ 6. Parse NDJSON events ─▶ final JSON {verdict, items[]}
+   ▼
+ verdict=approve  OR  no items ≥ threshold  OR  any error/timeout  ──▶ exit 0 ✓   (FAIL OPEN — never wedge)
+ material items (first time for this diff-hash)                    ──▶ {"decision":"block",
+                                                                        "reason": verify-or-fix list}
+                                                                       then record diff-hash so it won't re-fire
 ```
 
 `block` is the *only* channel a Stop hook has to hand text to Claude; it costs one extra
@@ -72,7 +67,7 @@ plugins/sugendran-skeptics/
   hooks/hooks.json                  # registers the Stop hook → skeptic-gate.mjs
   scripts/skeptic-gate.mjs          # single entry point (orchestrates the steps above)
   scripts/lib/
-    config.mjs    # load/merge config + env; thresholds, model, caps, on/off
+    config.mjs    # load/merge config + env; thresholds, caps, on/off (no model — opencode owns that)
     diff.mjs      # collect working-tree diff; size; stat-only fallback; hash; defensive I/O
     intent.mjs    # read transcript_path → last user request (fail-open if absent)
     prompt.mjs    # interpolate prompts/skeptic.md with the diff blob + intent
@@ -139,6 +134,9 @@ Adapts codex's adversarial framing, but **narrowed to business logic**:
 - When the diff is in stat-only fallback mode, a `{{COLLECTION_GUIDANCE}}` block tells the
   model it has stats + file list, not full hunks, and to scope its certainty accordingly.
 
+*The prompt is calibrated against GLM-5.2 (Sugendran's default); the `opencode run` invocation
+itself stays model-agnostic, so any user's default model gets the same instructions.*
+
 ---
 
 ## Output schema (`schemas/skeptic-output.schema.json`)
@@ -178,28 +176,32 @@ not enforced. Verify the business rule or clamp it."*
 | Key | Default | Purpose |
 | --- | --- | --- |
 | `enabled` | `true` | master on/off (`SKEPTICS_DISABLE=1` forces off) |
-| `model` | `ollama/glm-5.2` | opencode model id for the skeptic |
 | `timeout_ms` | `90000` | wall-clock cap on the opencode call |
 | `max_diff_bytes` | `262144` | above this → stat-only fallback |
 | `min_severity` | `medium` | drop items below this |
 | `min_confidence` | `0.6` | drop items below this |
 | `paths_ignore` | lockfiles, generated, vendored | never reviewed |
 
+**No `model` key by design.** The plugin runs `opencode run` with no `-m`, so opencode uses
+the user's configured default. Choosing the skeptic model (ideally non-Claude) is the user's
+job, set in opencode's own config — not the plugin's.
+
 ---
 
-## Ollama Cloud wiring — first implementation step (verify before building)
+## Model selection & first verification step
 
-Confirmed dead ends: OpenCode Zen (401 no payment), GitHub Copilot (403 unlicensed),
-Google key (missing). **Ollama Cloud + GLM-5.2 is the chosen path.** Exact opencode↔Ollama
-wiring is unconfirmed and must be verified first:
+**The plugin does not choose a model.** It runs `opencode run` with no `-m`, so opencode
+uses the user's configured default. Picking a model — and a non-Claude one for a genuine
+counter-view — is the user's responsibility, set in opencode's own config.
 
-- Either local `ollama` signed in to cloud (`ollama signin`) serving `glm-5.2`, with
-  opencode's `ollama` provider pointed at `http://localhost:11434`; or
-- A custom opencode provider (OpenAI-compatible) against `ollama.com` with `OLLAMA_API_KEY`.
+Sugendran's default is **GLM-5.2 via Ollama Cloud**, and the prompt is tuned against it.
+(Other providers were dead ends when probed: OpenCode Zen 401 no-payment, GitHub Copilot
+403 unlicensed, Google key missing.)
 
-**Verification:** one-line probe must return a parseable final JSON:
-`opencode run --format json -m ollama/glm-5.2 'reply only: {"verdict":"approve","items":[]}'`
-The exact model id (`glm-5.2` vs a cloud-tagged variant) is pinned here once confirmed.
+**Verify before building** — the user's default must return a parseable final JSON event:
+`opencode run --format json 'reply only with this and nothing else: {"verdict":"approve","items":[]}'`
+Confirm Sugendran's Ollama-Cloud default is the active one (local `ollama signin` proxy, or a
+custom opencode provider against `ollama.com`).
 
 ---
 
@@ -208,7 +210,7 @@ The exact model id (`glm-5.2` vs a cloud-tagged variant) is pinned here once con
 | Situation | Behaviour |
 | --- | --- |
 | `opencode` not on PATH | exit 0, breadcrumb "opencode unavailable" |
-| Ollama Cloud unreachable / auth error | exit 0, breadcrumb with provider error |
+| model/provider unreachable or auth error | exit 0, breadcrumb with provider error |
 | Call exceeds `timeout_ms` | kill child, exit 0, breadcrumb "timeout" |
 | Output not valid JSON / fails schema | exit 0, breadcrumb "unparseable" |
 | Empty / non-code diff | exit 0, silent |
@@ -243,7 +245,7 @@ The exact model id (`glm-5.2` vs a cloud-tagged variant) is pinned here once con
 - [ ] **Logic bug** — introduce an inverted condition / off-by-one / mishandled-empty case in domain logic; skeptic raises a `logic-bug` item.
 - [ ] **Pure refactor** — rename a variable or move a function with no behaviour change; skeptic stays silent (verdict approve, exit 0).
 - [ ] **No-nag** — finish a second turn without changing code; no second injection for the same diff.
-- [ ] **Fail open** — set `model` to a bogus id; finish a turn; turn completes normally, breadcrumb logged, no wedge.
+- [ ] **Fail open** — temporarily point your opencode default at a bogus model id (or make the provider unreachable); finish a turn; turn completes normally, breadcrumb logged, no wedge.
 - [ ] **Large diff** — generate a >256 KB diff; gate falls back to stat-only and completes within `timeout_ms`.
 - [ ] **Disable** — `SKEPTICS_DISABLE=1`; finish a turn; gate is a no-op.
 - [ ] **Manual** — `/sugendran-skeptics` prints current findings on demand.
@@ -265,4 +267,5 @@ The exact model id (`glm-5.2` vs a cloud-tagged variant) is pinned here once con
 1. **Advisory mechanism** — OK that "advisory" = one soft `block` per change-set (the only
    way to feed Claude)? Or do you want pure non-blocking (file + user notice, manual pull)?
 2. **Spec location** — kept at `docs/superpowers/specs/`; move into the plugin dir instead?
-3. **Skeptic model id** — `ollama/glm-5.2` assumed; confirm against your Ollama Cloud setup.
+3. **Model — resolved.** Plugin passes no `-m`; uses the user's opencode default (Sugendran:
+   GLM-5.2 via Ollama Cloud). Build step 1 verifies that default returns parseable JSON.
