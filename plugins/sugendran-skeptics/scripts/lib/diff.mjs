@@ -51,7 +51,7 @@ export function collectDiff({ cwd, maxBytes, pathsIgnore = [], runGit, readFileS
   const fullText = [tracked, ...untrackedSections].filter(Boolean).join('\n\n');
   const files = filesFromDiff(tracked).concat(untrackedList);
 
-  if (!fullText) return { mode: 'empty', text: '', files: [], hash: hashText(''), bytes: 0 };
+  if (!fullText) return { mode: 'empty', text: '', files, hash: hashText(''), bytes: 0 };
 
   const bytes = Buffer.byteLength(fullText, 'utf8');
   if (bytes > maxBytes) {
