@@ -23,7 +23,7 @@ a single synchronous structured call.
 | Plugin name | `sugendran-skeptics` |
 | Relationship to `sugendran-reviews` | 100% separate, no coupling |
 | Trigger | Claude Code **Stop hook** (Claude finished its turn) |
-| Posture | **Advisory** — inject findings once per change-set, no enforced loop |
+| Posture | **Advisory** — inject findings once per change-set via non-blocking `additionalContext`, no enforced loop |
 | Focus | **Unverified assumptions (primary)** + **logic bugs (secondary)**, on **business-logic changes** only |
 | Out of scope | security threat-model · deploy/prod safety · type/API design · deep test analysis · style — all deferred to `sugendran-reviews` |
 | Intent grounding | last user request (from the hook's `transcript_path`) fed in, so it can weigh "right thing" vs "assumed" |
@@ -44,18 +44,20 @@ Claude finishes a turn ──▶ Stop hook ──▶ scripts/skeptic-gate.mjs
    │ 2. Collect uncommitted diff (git diff HEAD + untracked)
    │ 3. No reviewable code, or diff-hash already reviewed   ──▶ exit 0 ✓   (no-nag)
    │ 4. Diff over size ceiling?  ─▶ stat-only fallback view
-   │ 5. opencode run --format json <skeptic prompt>             (user's default model; read-only, timeout)
-   │ 6. Parse NDJSON events ─▶ final JSON {verdict, items[]}
+   │ 5. opencode run --format json  (prompt+diff piped via stdin)  (user's default model; timeout)
+   │ 6. Parse NDJSON `text` events ─▶ final JSON {verdict, items[]}
    ▼
  verdict=approve  OR  no items ≥ threshold  OR  any error/timeout  ──▶ exit 0 ✓   (FAIL OPEN — never wedge)
- material items (first time for this diff-hash)                    ──▶ {"decision":"block",
-                                                                        "reason": verify-or-fix list}
+ material items (first time for this diff-hash)                    ──▶ additionalContext =
+                                                                        verify-or-fix list (non-blocking)
                                                                        then record diff-hash so it won't re-fire
 ```
 
-`block` is the *only* channel a Stop hook has to hand text to Claude; it costs one extra
-turn. Advisory = we use it **once per change-set** and the no-nag record stops it firing
-again. (A future "blocking gate" mode would simply re-fire until findings clear.)
+A Stop hook hands text to Claude **without blocking** via
+`hookSpecificOutput.additionalContext` — Claude sees the findings but is not forced to keep
+working. That is exactly "advisory". The no-nag record means a given item-set is injected at
+most once. (A future "blocking gate" mode would instead use `{"decision":"block","reason":…}`
+to re-fire until items clear; `stop_hook_active` guards against loops there.)
 
 ---
 
@@ -100,8 +102,8 @@ the fail-open guarantee.
 5. **Grounded + calibrated prompt.** "Break confidence, invent nothing, one strong challenge
    over many weak, return no items if the logic is sound." Calibration is what keeps it quiet
    on good code and drives the assumption-and-bug layer toward zero by PR time.
-6. **Claude-actionable + escape hatches.** Strict JSON schema; the injected `reason` is a
-   terse machine-derived action list (file:line · kind · problem · verify), not human prose.
+6. **Claude-actionable + escape hatches.** Strict JSON schema; the injected `additionalContext`
+   is a terse machine-derived action list (file:line · kind · problem · verify), not human prose.
    `SKEPTICS_DISABLE=1`, `stop_hook_active`, a config file, and the manual command all keep
    the user in control.
 
@@ -162,9 +164,9 @@ itself stays model-agnostic, so any user's default model gets the same instructi
 ```
 
 `decision.mjs` validates this, drops items below the configured
-`min_severity` / `min_confidence`, and only injects if any survive. The injected `reason`
-reads as a verify-or-fix action list — e.g. *"src/pricing.ts:42 — assumes discount ≤ price;
-not enforced. Verify the business rule or clamp it."*
+`min_severity` / `min_confidence`, and only injects if any survive. The injected
+`additionalContext` reads as a verify-or-fix action list — e.g. *"src/pricing.ts:42 — assumes
+discount ≤ price; not enforced. Verify the business rule or clamp it."*
 
 ---
 
@@ -217,7 +219,7 @@ custom opencode provider against `ollama.com`).
 | `transcript_path` missing/unreadable | proceed without intent grounding (don't fail) |
 | Diff-hash already reviewed | exit 0, silent (no-nag) |
 | `verdict:approve` / no business-logic change / all items sub-threshold | exit 0, silent |
-| Material items, first time | `block` + verify-or-fix action list; record hash |
+| Material items, first time | `additionalContext` = verify-or-fix list (non-blocking); record hash |
 
 ---
 
@@ -264,8 +266,8 @@ custom opencode provider against `ollama.com`).
 
 ## Open questions for review
 
-1. **Advisory mechanism** — OK that "advisory" = one soft `block` per change-set (the only
-   way to feed Claude)? Or do you want pure non-blocking (file + user notice, manual pull)?
+1. **Advisory mechanism — resolved.** Uses `hookSpecificOutput.additionalContext` (genuine
+   non-blocking; Claude sees the findings, isn't forced to continue). No `block` in v1.
 2. **Spec location** — kept at `docs/superpowers/specs/`; move into the plugin dir instead?
 3. **Model — resolved.** Plugin passes no `-m`; uses the user's opencode default (Sugendran:
    GLM-5.2 via Ollama Cloud). Build step 1 verifies that default returns parseable JSON.
