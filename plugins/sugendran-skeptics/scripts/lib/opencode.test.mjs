@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
-import { parseOpencodeStream, runOpencode } from './opencode.mjs';
+import { parseOpencodeStream, runOpencode, resolveOpencodeBin } from './opencode.mjs';
 
 const SUCCESS = [
   '{"type":"step_start","part":{"type":"step-start"}}',
@@ -57,4 +57,36 @@ test('runOpencode handles spawn ENOENT', async () => {
   const r = await runOpencode({ prompt: 'x', cwd: '/x', timeoutMs: 100, spawn: () => { throw new Error('ENOENT'); } });
   assert.equal(r.ok, false);
   assert.match(r.error, /unavailable/);
+});
+
+test('resolveOpencodeBin honours SKEPTICS_OPENCODE_BIN when it exists', () => {
+  const bin = resolveOpencodeBin({
+    env: { SKEPTICS_OPENCODE_BIN: '/custom/oc' },
+    existsSync: (p) => p === '/custom/oc',
+    home: '/home/u',
+  });
+  assert.equal(bin, '/custom/oc');
+});
+
+test('resolveOpencodeBin finds ~/.opencode/bin/opencode when not on PATH', () => {
+  const bin = resolveOpencodeBin({
+    env: {},
+    existsSync: (p) => p === '/home/u/.opencode/bin/opencode',
+    home: '/home/u',
+  });
+  assert.equal(bin, '/home/u/.opencode/bin/opencode');
+});
+
+test('resolveOpencodeBin ignores a non-existent override and probes known locations', () => {
+  const bin = resolveOpencodeBin({
+    env: { SKEPTICS_OPENCODE_BIN: '/gone/oc' },
+    existsSync: (p) => p === '/opt/homebrew/bin/opencode',
+    home: '/home/u',
+  });
+  assert.equal(bin, '/opt/homebrew/bin/opencode');
+});
+
+test('resolveOpencodeBin falls back to bare opencode when nothing is found', () => {
+  const bin = resolveOpencodeBin({ env: {}, existsSync: () => false, home: '/home/u' });
+  assert.equal(bin, 'opencode');
 });

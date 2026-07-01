@@ -1,7 +1,8 @@
 // scripts/skeptic-gate.mjs
-import { readFileSync } from 'node:fs';
+import { readFileSync, appendFileSync, writeFileSync, mkdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { homedir } from 'node:os';
 
 import { loadConfig } from './lib/config.mjs';
 import { collectDiff } from './lib/diff.mjs';
@@ -13,13 +14,37 @@ import { makeState } from './lib/state.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
+// A silently fail-open background hook needs a breadcrumb trail, otherwise a
+// hook that never fired and a hook that fired-but-failed look identical. Log to
+// a stable, discoverable path independent of TMPDIR (which can differ in a
+// hook's spawned environment).
+function logFilePath() {
+  return join(homedir(), '.cache', 'sugendran-skeptics', 'skeptic.log');
+}
+
+function fileLog(line) {
+  try {
+    const path = logFilePath();
+    mkdirSync(dirname(path), { recursive: true });
+    const stamped = `${new Date().toISOString()} ${line}\n`;
+    let size = 0;
+    try { size = statSync(path).size; } catch { size = 0; }
+    if (size > 262144) writeFileSync(path, stamped);
+    else appendFileSync(path, stamped);
+  } catch { /* never throw from logging */ }
+}
+
 export function realDeps() {
   return {
     loadConfig, collectDiff, readIntent, buildPrompt, runOpencode,
     coerceJson, validateOutput, decide, buildHookOutput,
     state: makeState(),
     readTemplate: () => readFileSync(join(HERE, '..', 'prompts', 'skeptic.md'), 'utf8'),
-    log: (msg) => { try { process.stderr.write(`[sugendran-skeptics] ${msg}\n`); } catch { /* ignore */ } },
+    log: (msg) => {
+      const line = `[sugendran-skeptics] ${msg}`;
+      try { process.stderr.write(`${line}\n`); } catch { /* ignore */ }
+      fileLog(line);
+    },
   };
 }
 
@@ -66,6 +91,7 @@ function readStdin() {
 async function runManual() {
   try {
     const deps = realDeps();
+    deps.log('manual invoked');
     const cwd = process.cwd();
     const config = { ...deps.loadConfig(process.env, cwd), enabled: true };
     const diff = deps.collectDiff({ cwd, maxBytes: config.maxDiffBytes, pathsIgnore: config.pathsIgnore });
@@ -88,7 +114,10 @@ async function main() {
   if (process.argv.slice(2).includes('--manual')) return runManual();
   let input = {};
   try { input = JSON.parse(await readStdin()); } catch { input = {}; }
-  const out = await runGate(input, realDeps());
+  const deps = realDeps();
+  deps.log(`invoked: session=${input?.session_id || '?'} cwd=${input?.cwd || process.cwd()} stop_hook_active=${!!input?.stop_hook_active}`);
+  const out = await runGate(input, deps);
+  deps.log(`result: ${out && out.hookSpecificOutput ? 'injected findings' : 'no-op {}'}`);
   process.stdout.write(JSON.stringify(out));
   process.exit(0);
 }

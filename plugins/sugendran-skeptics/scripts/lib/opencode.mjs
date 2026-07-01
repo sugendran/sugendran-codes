@@ -1,4 +1,7 @@
 import { spawn as nodeSpawn } from 'node:child_process';
+import { existsSync as fsExistsSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 
 export function parseOpencodeStream(stdout) {
   const lines = String(stdout).split('\n').map((l) => l.trim()).filter(Boolean);
@@ -19,8 +22,27 @@ export function parseOpencodeStream(stdout) {
   return { ok: true, text };
 }
 
+// Resolve the opencode binary without relying on PATH. A Stop hook is often
+// spawned with a minimal PATH that excludes the opencode install dir
+// (~/.opencode/bin), which would make `spawn('opencode')` ENOENT and the gate
+// fail open silently. Order: explicit override → known install locations →
+// bare name (PATH lookup) as a last resort.
+export function resolveOpencodeBin({ env = process.env, existsSync = fsExistsSync, home = homedir() } = {}) {
+  const override = env.SKEPTICS_OPENCODE_BIN;
+  if (override && existsSync(override)) return override;
+  const candidates = [
+    join(home, '.opencode', 'bin', 'opencode'),
+    '/opt/homebrew/bin/opencode',
+    '/usr/local/bin/opencode',
+  ];
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate;
+  }
+  return 'opencode';
+}
+
 export function defaultSpawn(_prompt, cwd) {
-  return nodeSpawn('opencode', ['run', '--format', 'json'], { cwd });
+  return nodeSpawn(resolveOpencodeBin(), ['run', '--format', 'json'], { cwd });
 }
 
 export function runOpencode({ prompt, cwd, timeoutMs, spawn = defaultSpawn }) {
