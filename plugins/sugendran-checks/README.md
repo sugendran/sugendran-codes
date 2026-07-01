@@ -2,14 +2,24 @@
 
 A Claude Code Stop hook that runs a **second-model skeptic** (via the [opencode](https://opencode.ai) CLI) over the business logic Claude just wrote, and asks the question Claude can't ask itself: *are we doing the right thing, or just assuming it's right?*
 
-It is separate from `sugendran-reviews` (the deep PR-time pass). Skeptics runs **in the loop**, advisory and non-blocking, and only engages when **business logic** changes.
+It is separate from `sugendran-reviews` (the deep PR-time pass). It runs **in the loop**, advisory and non-blocking, and only engages when **business logic** changes.
+
+## Requirements
+
+- **[opencode](https://opencode.ai) installed and authenticated**, with your **default model set to a non-Claude model** — the plugin runs `opencode run` with no `-m`, so it uses that default. Without a working opencode default the hook silently does nothing. See [Model](#model).
+- **Node.js on your `PATH`** — the Stop hook runs via `node` (Claude Code already needs Node). If `node` can't be resolved in the hook's environment, the hook silently no-ops.
 
 ## Install
 
 ```bash
 /plugin marketplace add sugendran/sugendran-codes
 /plugin install sugendran-checks@sugendran-codes
+/reload-plugins        # activate now (or restart Claude Code)
 ```
+
+**That's the whole setup — there is no manual hook wiring.** Installing the plugin registers the Stop hook automatically; after `/reload-plugins` it runs on every turn Claude finishes, reviewing your uncommitted changes.
+
+Installed at **user scope** it runs across all your projects. Turn it off with `CHECKS_DISABLE=1` (environment), `/sugendran-checks off` (this repo), or `/plugin disable sugendran-checks@sugendran-codes` (everywhere); remove it with `/plugin uninstall sugendran-checks@sugendran-codes`.
 
 ## Configuration
 
