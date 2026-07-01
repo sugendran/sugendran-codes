@@ -16,16 +16,16 @@ test('defaults when no file and no env', () => {
   assert.ok(Array.isArray(cfg.pathsIgnore));
 });
 
-test('SKEPTICS_DISABLE=1 forces enabled false', () => {
+test('CHECKS_DISABLE=1 forces enabled false', () => {
   const dir = mkdtempSync(join(tmpdir(), 'cfg-'));
-  assert.equal(loadConfig({ SKEPTICS_DISABLE: '1' }, dir).enabled, false);
+  assert.equal(loadConfig({ CHECKS_DISABLE: '1' }, dir).enabled, false);
 });
 
 test('repo file overrides defaults; env wins over file', () => {
   const dir = mkdtempSync(join(tmpdir(), 'cfg-'));
-  writeFileSync(join(dir, '.sugendran-skeptics.json'),
+  writeFileSync(join(dir, '.sugendran-checks.json'),
     JSON.stringify({ enabled: true, timeoutMs: 1234, minSeverity: 'high' }));
-  const cfg = loadConfig({ SKEPTICS_DISABLE: 'true' }, dir);
+  const cfg = loadConfig({ CHECKS_DISABLE: 'true' }, dir);
   assert.equal(cfg.timeoutMs, 1234);
   assert.equal(cfg.minSeverity, 'high');
   assert.equal(cfg.enabled, false); // env override
@@ -33,7 +33,7 @@ test('repo file overrides defaults; env wins over file', () => {
 
 test('garbage in file is ignored, not thrown', () => {
   const dir = mkdtempSync(join(tmpdir(), 'cfg-'));
-  writeFileSync(join(dir, '.sugendran-skeptics.json'), 'not json {');
+  writeFileSync(join(dir, '.sugendran-checks.json'), 'not json {');
   assert.equal(loadConfig({}, dir).timeoutMs, 90000);
   assert.equal(SEVERITY_RANK.critical, 4);
 });

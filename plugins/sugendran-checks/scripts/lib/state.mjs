@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 export function defaultStateDir() {
-  return join(tmpdir(), 'sugendran-skeptics');
+  return join(tmpdir(), 'sugendran-checks');
 }
 
 function safe(id) {

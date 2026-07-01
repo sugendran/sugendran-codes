@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/skeptic-gate.mjs\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/checks-gate.mjs\""
           }
         ]
       }

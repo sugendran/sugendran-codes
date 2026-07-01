@@ -29,11 +29,11 @@ function sanitise(obj) {
 export function loadConfig(env = process.env, cwd = process.cwd()) {
   let fileCfg = {};
   try {
-    fileCfg = JSON.parse(readFileSync(join(cwd, '.sugendran-skeptics.json'), 'utf8'));
+    fileCfg = JSON.parse(readFileSync(join(cwd, '.sugendran-checks.json'), 'utf8'));
   } catch {
     fileCfg = {};
   }
   const cfg = { ...DEFAULTS, ...sanitise(fileCfg) };
-  if (env.SKEPTICS_DISABLE === '1' || env.SKEPTICS_DISABLE === 'true') cfg.enabled = false;
+  if (env.CHECKS_DISABLE === '1' || env.CHECKS_DISABLE === 'true') cfg.enabled = false;
   return cfg;
 }

@@ -1,4 +1,4 @@
-# sugendran-skeptics
+# sugendran-checks
 
 A Claude Code Stop hook that runs a **second-model skeptic** (via the [opencode](https://opencode.ai) CLI) over the business logic Claude just wrote, and asks the question Claude can't ask itself: *are we doing the right thing, or just assuming it's right?*
 
@@ -8,16 +8,16 @@ It is separate from `sugendran-reviews` (the deep PR-time pass). Skeptics runs *
 
 ```bash
 /plugin marketplace add sugendran/sugendran-codes
-/plugin install sugendran-skeptics@sugendran-codes
+/plugin install sugendran-checks@sugendran-codes
 ```
 
 ## Configuration
 
-The skeptic reads `./.sugendran-skeptics.json` with these keys:
+The skeptic reads `./.sugendran-checks.json` with these keys:
 
 | Key | Default | Notes |
 |-----|---------|-------|
-| `enabled` | `true` | Disable via config or `SKEPTICS_DISABLE=1` environment variable |
+| `enabled` | `true` | Disable via config or `CHECKS_DISABLE=1` environment variable |
 | `timeoutMs` | `90000` | Max time (ms) to wait for skeptic response |
 | `maxDiffBytes` | `262144` | Diffs larger than this use stat-only mode (filename + change count, no content) |
 | `minSeverity` | `medium` | Report findings at this severity or higher: `low`, `medium`, `high`, `critical` |
@@ -30,7 +30,7 @@ The plugin runs `opencode run` with **no `-m`** — it uses *your* opencode defa
 
 ## Fail-open guarantee
 
-Any failure — opencode missing, timeout, unparseable response — silently allows the turn to finish. The skeptic hook **never blocks Claude**. If you want to disable it entirely, set `SKEPTICS_DISABLE=1` or run `/sugendran-checks off`.
+Any failure — opencode missing, timeout, unparseable response — silently allows the turn to finish. The skeptic hook **never blocks Claude**. If you want to disable it entirely, set `CHECKS_DISABLE=1` or run `/sugendran-checks off`.
 
 ## How it works
 

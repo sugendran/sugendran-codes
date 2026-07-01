@@ -59,9 +59,9 @@ test('runOpencode handles spawn ENOENT', async () => {
   assert.match(r.error, /unavailable/);
 });
 
-test('resolveOpencodeBin honours SKEPTICS_OPENCODE_BIN when it exists', () => {
+test('resolveOpencodeBin honours CHECKS_OPENCODE_BIN when it exists', () => {
   const bin = resolveOpencodeBin({
-    env: { SKEPTICS_OPENCODE_BIN: '/custom/oc' },
+    env: { CHECKS_OPENCODE_BIN: '/custom/oc' },
     existsSync: (p) => p === '/custom/oc',
     home: '/home/u',
   });
@@ -79,7 +79,7 @@ test('resolveOpencodeBin finds ~/.opencode/bin/opencode when not on PATH', () =>
 
 test('resolveOpencodeBin ignores a non-existent override and probes known locations', () => {
   const bin = resolveOpencodeBin({
-    env: { SKEPTICS_OPENCODE_BIN: '/gone/oc' },
+    env: { CHECKS_OPENCODE_BIN: '/gone/oc' },
     existsSync: (p) => p === '/opt/homebrew/bin/opencode',
     home: '/home/u',
   });

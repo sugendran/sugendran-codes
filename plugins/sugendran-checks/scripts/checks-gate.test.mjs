@@ -1,7 +1,7 @@
-// scripts/skeptic-gate.test.mjs
+// scripts/checks-gate.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { runGate } from './skeptic-gate.mjs';
+import { runGate } from './checks-gate.mjs';
 
 function baseDeps(over = {}) {
   const recorded = [];

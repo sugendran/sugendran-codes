@@ -28,7 +28,7 @@ export function parseOpencodeStream(stdout) {
 // fail open silently. Order: explicit override → known install locations →
 // bare name (PATH lookup) as a last resort.
 export function resolveOpencodeBin({ env = process.env, existsSync = fsExistsSync, home = homedir() } = {}) {
-  const override = env.SKEPTICS_OPENCODE_BIN;
+  const override = env.CHECKS_OPENCODE_BIN;
   if (override && existsSync(override)) return override;
   const candidates = [
     join(home, '.opencode', 'bin', 'opencode'),

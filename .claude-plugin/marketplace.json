@@ -14,8 +14,8 @@
       "description": "Deep PR review via specialist subagents, driven by /sugendran-reviews:review."
     },
     {
-      "name": "sugendran-skeptics",
-      "source": "./plugins/sugendran-skeptics",
+      "name": "sugendran-checks",
+      "source": "./plugins/sugendran-checks",
       "description": "Adversarial opencode skeptic that reviews business-logic changes via a Stop hook."
     }
   ]

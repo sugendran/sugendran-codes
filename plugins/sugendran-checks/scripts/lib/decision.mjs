@@ -52,7 +52,7 @@ export function formatAdditionalContext(items) {
     return `- [${it.severity}] ${it.file}:${it.line_start} — ${it.kind}: ${what} → verify: ${it.verify}`;
   });
   return [
-    'sugendran-skeptics (a second model reviewing the business logic you just changed) flagged these. Confirm each is actually correct, or address it, then continue:',
+    'sugendran-checks (a second model reviewing the business logic you just changed) flagged these. Confirm each is actually correct, or address it, then continue:',
     ...lines,
   ].join('\n');
 }

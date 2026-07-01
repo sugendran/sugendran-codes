@@ -1,4 +1,4 @@
-// scripts/skeptic-gate.mjs
+// scripts/checks-gate.mjs
 import { readFileSync, appendFileSync, writeFileSync, mkdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,7 +19,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 // a stable, discoverable path independent of TMPDIR (which can differ in a
 // hook's spawned environment).
 function logFilePath() {
-  return join(homedir(), '.cache', 'sugendran-skeptics', 'skeptic.log');
+  return join(homedir(), '.cache', 'sugendran-checks', 'checks.log');
 }
 
 function fileLog(line) {
@@ -39,9 +39,9 @@ export function realDeps() {
     loadConfig, collectDiff, readIntent, buildPrompt, runOpencode,
     coerceJson, validateOutput, decide, buildHookOutput,
     state: makeState(),
-    readTemplate: () => readFileSync(join(HERE, '..', 'prompts', 'skeptic.md'), 'utf8'),
+    readTemplate: () => readFileSync(join(HERE, '..', 'prompts', 'checks.md'), 'utf8'),
     log: (msg) => {
-      const line = `[sugendran-skeptics] ${msg}`;
+      const line = `[sugendran-checks] ${msg}`;
       try { process.stderr.write(`${line}\n`); } catch { /* ignore */ }
       fileLog(line);
     },
