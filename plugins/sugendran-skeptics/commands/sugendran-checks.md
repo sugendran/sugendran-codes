@@ -4,7 +4,7 @@ argument-hint: "[on | off]"
 allowed-tools: ["Bash", "Read", "Write"]
 ---
 
-# sugendran-skeptics (manual)
+# sugendran-checks (manual)
 
 **Argument:** "$ARGUMENTS"
 

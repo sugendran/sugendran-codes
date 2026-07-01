@@ -30,7 +30,7 @@ The plugin runs `opencode run` with **no `-m`** — it uses *your* opencode defa
 
 ## Fail-open guarantee
 
-Any failure — opencode missing, timeout, unparseable response — silently allows the turn to finish. The skeptic hook **never blocks Claude**. If you want to disable it entirely, set `SKEPTICS_DISABLE=1` or run `/sugendran-skeptics off`.
+Any failure — opencode missing, timeout, unparseable response — silently allows the turn to finish. The skeptic hook **never blocks Claude**. If you want to disable it entirely, set `SKEPTICS_DISABLE=1` or run `/sugendran-checks off`.
 
 ## How it works
 
@@ -39,7 +39,7 @@ On every Stop, the hook diffs your working tree, sends it to the skeptic, and �
 ## Manual use
 
 ```bash
-/sugendran-skeptics          # review the working tree now
-/sugendran-skeptics off      # disable for this repo
-/sugendran-skeptics on       # re-enable
+/sugendran-checks            # review the working tree now
+/sugendran-checks off        # disable for this repo
+/sugendran-checks on         # re-enable
 ```
