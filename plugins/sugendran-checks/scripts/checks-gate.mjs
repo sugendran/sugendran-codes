@@ -1,8 +1,7 @@
 // scripts/checks-gate.mjs
-import { readFileSync, appendFileSync, writeFileSync, mkdirSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { homedir } from 'node:os';
 
 import { loadConfig } from './lib/config.mjs';
 import { collectDiff } from './lib/diff.mjs';
@@ -11,28 +10,9 @@ import { buildPrompt } from './lib/prompt.mjs';
 import { runOpencode } from './lib/opencode.mjs';
 import { coerceJson, validateOutput, decide, buildHookOutput } from './lib/decision.mjs';
 import { makeState } from './lib/state.mjs';
+import { fileLog } from './lib/log.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-
-// A silently fail-open background hook needs a breadcrumb trail, otherwise a
-// hook that never fired and a hook that fired-but-failed look identical. Log to
-// a stable, discoverable path independent of TMPDIR (which can differ in a
-// hook's spawned environment).
-function logFilePath() {
-  return join(homedir(), '.cache', 'sugendran-checks', 'checks.log');
-}
-
-function fileLog(line) {
-  try {
-    const path = logFilePath();
-    mkdirSync(dirname(path), { recursive: true });
-    const stamped = `${new Date().toISOString()} ${line}\n`;
-    let size = 0;
-    try { size = statSync(path).size; } catch { size = 0; }
-    if (size > 262144) writeFileSync(path, stamped);
-    else appendFileSync(path, stamped);
-  } catch { /* never throw from logging */ }
-}
 
 export function realDeps() {
   return {

@@ -6,7 +6,7 @@
     "email": "sugendran.ganess@ordermentum.com"
   },
   "description": "Personal Claude Code marketplace for skills Sugendran uses.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "plugins": [
     {
       "name": "sugendran-reviews",

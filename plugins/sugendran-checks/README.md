@@ -43,3 +43,11 @@ On every Stop, the hook diffs your working tree, sends it to the skeptic, and �
 /sugendran-checks off        # disable for this repo
 /sugendran-checks on         # re-enable
 ```
+
+## Plan review
+
+Beyond the code Stop hook, the plugin ships a **`review-plan` skill**. Before Claude presents a plan or design for your approval, it runs the plan through the same opencode skeptic — critiquing its unverified assumptions, gaps (missing edge cases, error handling, migration/rollback, tests, verification), and risks — so Claude can revise before asking you to approve.
+
+Because Claude Code has no plan-mode hook, this is a skill Claude invokes as planning discipline (not an enforced hook). It is advisory and fail-open: if opencode is unavailable or `CHECKS_DISABLE=1`, the plan is presented unchanged.
+
+Normally you don't run it yourself — the skill does. To try it directly, pipe plan text on stdin into the plugin's `scripts/plan-review.mjs`; it prints the findings (or a "no material concerns" / "unavailable" note) and always exits 0.
