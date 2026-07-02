@@ -54,10 +54,11 @@ export async function runPlanReview(planText, deps) {
 function readStdin() {
   return new Promise((resolve) => {
     let data = '';
+    const done = () => { clearTimeout(timer); resolve(data); };
     process.stdin.on('data', (d) => { data += d; });
-    process.stdin.on('end', () => resolve(data));
-    process.stdin.on('error', () => resolve(data));
-    setTimeout(() => resolve(data), 2000); // safety: never hang
+    process.stdin.on('end', done);
+    process.stdin.on('error', done);
+    const timer = setTimeout(done, 2000); // safety: never hang
   });
 }
 
@@ -75,4 +76,4 @@ async function main() {
 }
 
 const invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
-if (invokedDirectly) main();
+if (invokedDirectly) main().catch(() => process.exit(0));
