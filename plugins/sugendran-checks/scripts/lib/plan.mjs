@@ -29,6 +29,7 @@ export function validatePlanOutput(obj) {
 }
 
 export function formatPlanFindings(items) {
+  if (!Array.isArray(items) || items.length === 0) return '';
   const lines = items.map((it) => {
     const what = it.kind === 'assumption' ? (it.assumption || it.problem) : (it.problem || it.assumption);
     return `- [${it.severity}] (${it.kind}) ${what} → address: ${it.verify}`;

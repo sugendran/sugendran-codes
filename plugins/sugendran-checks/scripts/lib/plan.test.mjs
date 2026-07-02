@@ -34,3 +34,9 @@ test('formatPlanFindings renders readable lines with no file:line', () => {
   assert.match(out, /\[medium\] \(gap\) no tests → address: add tests/);
   assert.doesNotMatch(out, /:\d+/);
 });
+
+test('formatPlanFindings returns empty string on empty or non-array input (no throw)', () => {
+  assert.equal(formatPlanFindings([]), '');
+  assert.doesNotThrow(() => formatPlanFindings(null));
+  assert.equal(formatPlanFindings(null), '');
+});
