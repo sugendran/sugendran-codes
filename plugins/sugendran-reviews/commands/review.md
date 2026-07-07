@@ -19,6 +19,10 @@ act on; a synthesiser ranks everything into one action plan.
 
 - Identify the diff source: `gh pr diff` if a PR exists (also `gh pr view` for
   title/description), otherwise the staged/working `git diff`.
+- Record the PR identity when one exists: the `REPO` and `PR NUMBER` supplied in
+  your invocation context, or `gh pr view --json number,url` to detect them. Keep
+  these — the synthesiser needs them to read the PR's existing feedback (step 6).
+  If there is no PR (local diff review), there is no identity to pass on.
 - Create a scope dir: `SCOPE=$(mktemp -d /tmp/sr-review-XXXXXX)`.
 - Classify every changed file into one of:
   - **source** — application/library code
@@ -89,7 +93,10 @@ Every Task prompt contains: the navigator's reading guide, the agent's snapshot 
 ### 6. Synthesise (always last)
 
 Launch **sr-synthesis** with the reading guide, every reviewer's findings, the snapshot
-paths (`source.diff` etc.) and `files.txt`, and repo read access. It does **not** pass
+paths (`source.diff` etc.) and `files.txt`, repo read access, and — when a PR exists — the
+PR identity (`REPO` and `PR NUMBER`) recorded in step 1 so it can read the PR's existing
+human and prior-review feedback and reconcile findings into new / still-open / resolved.
+If there is no PR, tell it so — it treats every finding as new. It does **not** pass
 findings through blindly: for each one it greps the verbatim snippet in the real file to
 comprehend it and resolve the exact `file:line`, gates out anything it can't confirm,
 cross-applies lenses between reviewers, recommends follow-up passes, dedupes, applies
